@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://c0j1ko7dmyo1p"]
+
+[ext_resource type="Script" uid="uid://dk8u2g4vb5tp5" path="res://Scripts/slammer.gd" id="1_bgsty"]
+[ext_resource type="Texture2D" uid="uid://wgsfvlf8qiyy" path="res://Sprites/slammers.png" id="2_4mpmp"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_3owqy"]
+radius = 32.06244
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_8upip"]
+radius = 30.016663
+
+[node name="Slammer" type="CharacterBody2D" unique_id=826291310]
+script = ExtResource("1_bgsty")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=285713405]
+texture = ExtResource("2_4mpmp")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1056076994]
+shape = SubResource("CircleShape2D_3owqy")
+
+[node name="Area2D" type="Area2D" parent="." unique_id=1716026802]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=767924154]
+shape = SubResource("CircleShape2D_8upip")
+debug_color = Color(0.9779586, 0, 0.40373692, 0.41960785)
+
+[connection signal="input_event" from="Area2D" to="." method="_on_area_2d_input_event"]

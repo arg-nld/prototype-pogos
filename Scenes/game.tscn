@@ -1,0 +1,43 @@
+[gd_scene format=3 uid="uid://evqhvvjghmi8"]
+
+[ext_resource type="Script" uid="uid://ds2876q5mnrht" path="res://Scripts/game.gd" id="1_ebmjs"]
+[ext_resource type="Script" uid="uid://o3tkdc23g6xj" path="res://Scripts/stack.gd" id="2_qxrlw"]
+[ext_resource type="Texture2D" uid="uid://dyputc8kxbqck" path="res://Sprites/heads.png" id="3_wrm1d"]
+[ext_resource type="PackedScene" uid="uid://c0j1ko7dmyo1p" path="res://Scenes/slammer.tscn" id="4_3dryh"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_3owqy"]
+size = Vector2(1152, 650)
+
+[node name="Game" type="Node2D" unique_id=595261992]
+script = ExtResource("1_ebmjs")
+
+[node name="Table" type="Sprite2D" parent="." unique_id=1474169131]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Table" unique_id=842247500]
+position = Vector2(578, 323)
+shape = SubResource("RectangleShape2D_3owqy")
+
+[node name="Stack" type="Node2D" parent="." unique_id=904475131]
+script = ExtResource("2_qxrlw")
+
+[node name="Top Pog" type="Sprite2D" parent="Stack" unique_id=325460625]
+position = Vector2(582, 328)
+scale = Vector2(2, 2)
+texture = ExtResource("3_wrm1d")
+
+[node name="Count" type="Label" parent="Stack" unique_id=2121310578]
+offset_right = 28.0
+offset_bottom = 23.0
+text = "x20"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Pogs" type="Node2D" parent="." unique_id=484404958]
+
+[node name="Slammer" parent="." unique_id=826291310 instance=ExtResource("4_3dryh")]
+position = Vector2(761, 520)
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1179856198]
+position = Vector2(578, 325)
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1386052376]
