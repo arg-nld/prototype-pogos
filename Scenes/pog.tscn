@@ -8,6 +8,8 @@
 radius = 63.07139
 
 [node name="Pog" type="RigidBody2D" unique_id=30895922]
+linear_damp = 4.0
+angular_damp = 5.0
 script = ExtResource("1_nidgl")
 
 [node name="Front" type="Sprite2D" parent="." unique_id=2046179558]
