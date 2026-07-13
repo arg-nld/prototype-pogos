@@ -25,4 +25,5 @@ func _on_area_2d_area_entered(area: Area2D) -> void:
 	if area.name == "Hitbox":
 		hit = true
 		hide()
-		get_parent().call_deferred("spawn_pogs", pog_count)
+		var slam_position = area.global_position
+		get_parent().call_deferred("spawn_pogs", pog_count, slam_position)

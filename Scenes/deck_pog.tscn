@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://fksjfltd702g"]
+
+[ext_resource type="Script" uid="uid://c8qfiyiikg6qh" path="res://Scripts/deck_pog.gd" id="1_akvnl"]
+[ext_resource type="Texture2D" uid="uid://dyputc8kxbqck" path="res://Sprites/heads.png" id="2_kqait"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_375wh"]
+radius = 32.01562
+
+[node name="DeckPog" type="Area2D" unique_id=125442575]
+script = ExtResource("1_akvnl")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1217539815]
+texture = ExtResource("2_kqait")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2132091881]
+shape = SubResource("CircleShape2D_375wh")
+
+[connection signal="input_event" from="." to="." method="_on_input_event"]
