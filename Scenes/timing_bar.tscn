@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://dlvnaxlokcc7m"]
+
+[ext_resource type="Script" uid="uid://ctjk5f38jisob" path="res://Scripts/timing_bar.gd" id="1_nlxl0"]
+[ext_resource type="Texture2D" uid="uid://bra6knqihhmf6" path="res://Sprites/Bar.png" id="2_nlxl0"]
+[ext_resource type="Texture2D" uid="uid://ddl785k80sdlm" path="res://Sprites/Indicator.png" id="3_u8f0a"]
+[ext_resource type="AudioStream" uid="uid://b3jqcuy4w5uoh" path="res://Sounds/SlamSound.mp3" id="4_nlxl0"]
+
+[node name="TimingBar" type="Node2D" unique_id=852211452]
+script = ExtResource("1_nlxl0")
+
+[node name="Bar" type="Sprite2D" parent="." unique_id=28535576]
+position = Vector2(225.75, -1.2195435)
+scale = Vector2(0.51340485, 0.563154)
+texture = ExtResource("2_nlxl0")
+
+[node name="Indicator" type="Sprite2D" parent="." unique_id=31008056]
+position = Vector2(266.75, -3.219544)
+scale = Vector2(0.11354167, 0.09097223)
+texture = ExtResource("3_u8f0a")
+
+[node name="SlamSound" type="AudioStreamPlayer2D" parent="." unique_id=2074249988]
+stream = ExtResource("4_nlxl0")

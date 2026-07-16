@@ -1,20 +1,23 @@
 [gd_scene format=3 uid="uid://c0j1ko7dmyo1p"]
 
 [ext_resource type="Script" uid="uid://dk8u2g4vb5tp5" path="res://Scripts/slammer.gd" id="1_bgsty"]
-[ext_resource type="Texture2D" uid="uid://wgsfvlf8qiyy" path="res://Sprites/slammers.png" id="2_4mpmp"]
+[ext_resource type="Texture2D" uid="uid://dl2drmbfe3p1p" path="res://Sprites/silver slammer2.png" id="2_bgsty"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_8upip"]
-radius = 30.016663
+radius = 57.271286
 
 [node name="Slammer" type="Node2D" unique_id=1571014556]
 script = ExtResource("1_bgsty")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=285713405]
-texture = ExtResource("2_4mpmp")
+position = Vector2(-4.249997, -11.000004)
+scale = Vector2(1.0758929, 1.074074)
+texture = ExtResource("2_bgsty")
 
 [node name="Hitbox" type="Area2D" parent="." unique_id=1716026802]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Hitbox" unique_id=767924154]
+position = Vector2(-5, -10)
 shape = SubResource("CircleShape2D_8upip")
 debug_color = Color(0.9779586, 0, 0.40373692, 0.41960785)
 

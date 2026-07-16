@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://fksjfltd702g"]
 
 [ext_resource type="Script" uid="uid://c8qfiyiikg6qh" path="res://Scripts/deck_pog.gd" id="1_akvnl"]
-[ext_resource type="Texture2D" uid="uid://dyputc8kxbqck" path="res://Sprites/heads.png" id="2_kqait"]
+[ext_resource type="Texture2D" uid="uid://dbdjhr2xn06sv" path="res://Sprites/front proto.png" id="2_kqait"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_375wh"]
 radius = 32.01562
@@ -10,6 +10,8 @@ radius = 32.01562
 script = ExtResource("1_akvnl")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1217539815]
+position = Vector2(-0.7499989, -0.5)
+scale = Vector2(0.5208333, 0.5416667)
 texture = ExtResource("2_kqait")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2132091881]
