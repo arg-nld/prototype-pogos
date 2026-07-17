@@ -33,9 +33,4 @@ func _on_area_2d_area_entered(area: Area2D) -> void:
 		return
 	
 	hit = true
-	var slam_position = area.global_position
-	area.get_parent().queue_free()
 	hide()
-	var game = get_parent()
-	game.call_deferred("spawn_pogs", pog_count, slam_position)
-	game.call_deferred("start_next_turn")

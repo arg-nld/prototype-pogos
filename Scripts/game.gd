@@ -74,6 +74,7 @@ func arrange_deck(deck, y_pos):
 
 func spawn_slammer():
 	var slammer = SLAMMER.instantiate()
+	slammer.z_index = 100
 	add_child(slammer)
 
 	var start_position = stack_position + Vector2(0, -500)
@@ -109,7 +110,6 @@ func start_timing_bar():
 	active_timing_bar.position = timing_bar_position
 	active_timing_bar.slam_finished.connect(_on_timing_bar_slam_finished)
 
-
 func _on_timing_bar_slam_finished(result: Dictionary):
 	# Cache the outcome to drive the physics impulse later
 	slam_power = result.power
@@ -133,40 +133,134 @@ func animate_slammer_hit():
 		return
 	
 	var impact_pos = stack_position
+	var anticipation_pos = active_slammer.position + Vector2(0, -8)
+
 	var original_scale = active_slammer.scale
-	
+	var stack_original_scale = stack.scale
+	var stack_original_position = stack.position
+
 	# Scale the visual impact squash to match the minigame performance
 	var squash_amount = lerp(0.08, 0.28, slam_power)
-	
-	# 1. Swing down
-	var tween = create_tween()
-	tween.set_trans(Tween.TRANS_QUAD)
-	tween.set_ease(Tween.EASE_IN)
-	tween.tween_property(active_slammer, "position", impact_pos, 0.1)
-	
-	await tween.finished
-	
-	# 2. Impact squash (Conservation of Volume: wide and flat)
+
+	# -------------------------------------------------
+	# 1. Anticipation (small lift)
+	# -------------------------------------------------
+	var anticipation = create_tween()
+	anticipation.set_trans(Tween.TRANS_QUAD)
+	anticipation.set_ease(Tween.EASE_OUT)
+
+	anticipation.tween_property(
+		active_slammer,
+		"position",
+		anticipation_pos,
+		0.05
+	)
+
+	await anticipation.finished
+
+	# -------------------------------------------------
+	# 2. Fast Slam
+	# -------------------------------------------------
+	var slam = create_tween()
+	slam.set_trans(Tween.TRANS_QUAD)
+	slam.set_ease(Tween.EASE_IN)
+
+	slam.tween_property(
+		active_slammer,
+		"position",
+		impact_pos,
+		0.05
+	)
+
+	await slam.finished
+
+	# -------------------------------------------------
+	# Stack impact reaction
+	# -------------------------------------------------
+	await animate_stack_impact()
+
+	# -------------------------------------------------
+	# 3. Impact Squash
+	# -------------------------------------------------
 	var squash_tween = create_tween()
 	squash_tween.set_trans(Tween.TRANS_QUAD)
 	squash_tween.set_ease(Tween.EASE_OUT)
-	squash_tween.tween_property(
-		active_slammer, 
-		"scale", 
-		original_scale * Vector2(1.0 + squash_amount, 1.0 - squash_amount), 
+
+	# Slammer squash
+	squash_tween.parallel().tween_property(
+		active_slammer,
+		"scale",
+		original_scale * Vector2(1.0 + squash_amount, 1.0 - squash_amount),
 		0.05
 	)
-	
+
+	# Stack squash
+	squash_tween.parallel().tween_property(
+		stack,
+		"scale",
+		stack_original_scale * Vector2(1.08, 0.92),
+		0.05
+	)
+
+	# Stack pushed downward slightly
+	squash_tween.parallel().tween_property(
+		stack,
+		"position",
+		stack_original_position + Vector2(0, 4),
+		0.05
+	)
+
 	await squash_tween.finished
-	
-	# 3. Recoil / Fade out to clear the view for the physics simulation
+
+	# Small hold to emphasize impact
+	await get_tree().create_timer(0.04).timeout
+
+	# -------------------------------------------------
+	# 4. Recoil
+	# -------------------------------------------------
 	var recoil = create_tween()
 	recoil.set_trans(Tween.TRANS_BACK)
 	recoil.set_ease(Tween.EASE_OUT)
-	recoil.tween_property(active_slammer, "scale", original_scale, 0.1)
-	recoil.parallel().tween_property(active_slammer, "position", impact_pos + Vector2(0, -30), 0.18)
-	recoil.parallel().tween_property(active_slammer, "modulate:a", 0.0, 0.18)
-	
+
+	# Slammer returns to normal size
+	recoil.parallel().tween_property(
+		active_slammer,
+		"scale",
+		original_scale,
+		0.10
+	)
+
+	# Small upward bounce
+	recoil.parallel().tween_property(
+		active_slammer,
+		"position",
+		impact_pos + Vector2(0, -10),
+		0.12
+	)
+
+	# Stack returns to normal
+	recoil.parallel().tween_property(
+		stack,
+		"scale",
+		stack_original_scale,
+		0.12
+	)
+
+	recoil.parallel().tween_property(
+		stack,
+		"position",
+		stack_original_position,
+		0.12
+	)
+
+	# Fade the slammer
+	recoil.parallel().tween_property(
+		active_slammer,
+		"modulate:a",
+		0.0,
+		0.18
+	)
+
 	await recoil.finished
 
 
@@ -343,6 +437,73 @@ func _on_slam_button_pressed():
 	slam_button.hide()
 	slam_button.disabled = true
 
+func animate_stack_impact():
+	var pog_data = []
 
+	# Save original transforms
+	for pog in active_pogs:
+		pog_data.append({
+			"pog": pog,
+			"scale": pog.scale,
+			"position": pog.position
+		})
+
+
+	# Compress stack
+	var squash = create_tween()
+	squash.set_trans(Tween.TRANS_QUAD)
+	squash.set_ease(Tween.EASE_OUT)
+
+
+	for data in pog_data:
+		var pog = data["pog"]
+
+		squash.parallel().tween_property(
+			pog,
+			"scale",
+			Vector2(1.12, 0.88),
+			0.05
+		)
+
+		squash.parallel().tween_property(
+			pog,
+			"position",
+			data["position"] + Vector2(0, 4),
+			0.05
+		)
+
+
+	await squash.finished
+
+
+	# Tiny hold
+	await get_tree().create_timer(0.04).timeout
+
+
+	# Spring back
+	var rebound = create_tween()
+	rebound.set_trans(Tween.TRANS_BACK)
+	rebound.set_ease(Tween.EASE_OUT)
+
+
+	for data in pog_data:
+		var pog = data["pog"]
+
+		rebound.parallel().tween_property(
+			pog,
+			"scale",
+			data["scale"],
+			0.12
+		)
+
+		rebound.parallel().tween_property(
+			pog,
+			"position",
+			data["position"],
+			0.12
+		)
+
+	await rebound.finished
+	
 func start_next_turn():
 	slamming = false
