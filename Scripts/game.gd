@@ -75,17 +75,30 @@ func arrange_deck(deck, y_pos):
 func spawn_slammer():
 	var slammer = SLAMMER.instantiate()
 	add_child(slammer)
-	
-	slammer.position = Vector2(350, 500)
-	
-	# Dramatic entrance before the minigame starts
+
+	var start_position = stack_position + Vector2(0, -500)
+	var ready_position = stack_position + Vector2(0, -160)
+
+	slammer.position = start_position
+
 	var tween = create_tween()
-	tween.tween_property(slammer, "position", Vector2(420, 430), 0.4)
+	tween.set_trans(Tween.TRANS_QUAD)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(
+		slammer,
+		"position",
+		ready_position,
+		0.45
+	)
+
 	await tween.finished
-	
-	slammer_position = slammer.position
+
+	if !is_instance_valid(slammer):
+		return
+
 	active_slammer = slammer
-	
+	slammer_position = ready_position
+
 	start_timing_bar()
 
 
@@ -210,10 +223,10 @@ func check_results():
 	if remaining_pogs.is_empty():
 		end_round()
 	else:
-		# Set up for the next strike if pogs remain
+		# Put the remaining pogs back into a neat stack
 		restack_pogs(remaining_pogs)
 		slamming = false
-		spawn_slammer()
+		await spawn_slammer()
 
 
 func end_round():
@@ -325,7 +338,7 @@ func _on_slam_button_pressed():
 	arrange_deck(player_deck, 580)
 	stack.set_count(active_pogs.size())
 	stack.show()
-	spawn_slammer()
+	await spawn_slammer()
 	
 	slam_button.hide()
 	slam_button.disabled = true

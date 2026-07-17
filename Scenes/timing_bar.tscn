@@ -20,3 +20,7 @@ texture = ExtResource("3_u8f0a")
 
 [node name="SlamSound" type="AudioStreamPlayer2D" parent="." unique_id=2074249988]
 stream = ExtResource("4_nlxl0")
+
+[node name="RatingSprite" type="Sprite2D" parent="." unique_id=473703811]
+position = Vector2(411.99997, -1)
+scale = Vector2(0.194, 0.2)

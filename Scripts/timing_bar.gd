@@ -6,6 +6,13 @@ signal slam_finished(result)
 @onready var bar = $Bar
 @onready var indicator = $Indicator
 @onready var slam_sound = $SlamSound
+@onready var rating_sprite = $RatingSprite
+
+const PERFECT_TEXTURE = preload("res://Sprites/perfect.png")
+const GREAT_TEXTURE = preload("res://Sprites/great.png")
+const GOOD_TEXTURE = preload("res://Sprites/good.png")
+const BAD_TEXTURE = preload("res://Sprites/bad.png")
+const MISS_TEXTURE = preload("res://Sprites/miss.png")
 
 var direction := 1
 var speed := 250.0
@@ -29,6 +36,8 @@ func _ready():
 
 	top_limit = bar.position.y - bar_height / 2.0 + indicator_height / 2.0
 	bottom_limit = bar.position.y + bar_height / 2.0 - indicator_height / 2.0
+	
+	rating_sprite.hide()
 
 
 func _process(delta):
@@ -121,6 +130,7 @@ func bar_impact():
 	)
 
 	await tween.finished
+	
 
 
 func calculate_result():
@@ -145,17 +155,100 @@ func calculate_result():
 		rating = "Good"
 
 	elif power >= 0.35:
-		rating = "Okay"
+		rating = "Bad"
 
 	else:
-		rating = "Weak"
+		rating = "Miss"
 
 
 	slam_result = {
-		"power": power,
-		"rating": rating
+	"power": power,
+	"rating": rating
 	}
 
 	print(slam_result)
 
+	show_rating()
+
+	await show_rating_animation()
+
 	emit_signal("slam_finished", slam_result)
+	
+	
+func show_rating():
+
+	match slam_result.rating:
+		"Perfect":
+			rating_sprite.texture = PERFECT_TEXTURE
+
+		"Great":
+			rating_sprite.texture = GREAT_TEXTURE
+
+		"Good":
+			rating_sprite.texture = GOOD_TEXTURE
+
+		"Bad":
+			rating_sprite.texture = BAD_TEXTURE
+
+		"Miss":
+			rating_sprite.texture = MISS_TEXTURE
+
+	rating_sprite.show()
+
+func show_rating_animation():
+	
+	var original_position = rating_sprite.position
+	var original_scale = rating_sprite.scale
+
+	rating_sprite.show()
+
+	# Start tiny and transparent
+	rating_sprite.scale = original_scale * 0.8
+	rating_sprite.modulate.a = 0.0
+
+	var tween = create_tween()
+
+	tween.set_trans(Tween.TRANS_BACK)
+	tween.set_ease(Tween.EASE_OUT)
+
+	tween.parallel().tween_property(
+		rating_sprite,
+		"scale",
+		original_scale * 1.15,
+		0.12
+	)
+
+	tween.parallel().tween_property(
+		rating_sprite,
+		"modulate:a",
+		1.0,
+		0.08
+	)
+
+	tween.tween_property(
+		rating_sprite,
+		"scale",
+		original_scale,
+		0.10
+	)
+
+	tween.tween_interval(0.35)
+
+
+	tween.parallel().tween_property(
+		rating_sprite,
+		"modulate:a",
+		0.0,
+		0.18
+	)
+
+	tween.parallel().tween_property(
+		rating_sprite,
+		"position",
+		original_position + Vector2(0, -20),
+		0.18
+	)
+
+	await tween.finished
+	rating_sprite.position = original_position
+	rating_sprite.hide()
