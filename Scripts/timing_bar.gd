@@ -1,3 +1,4 @@
+#dont forget to make bar Area2D Zones / the current one is placeholder only retard - Past andrei to future andrei
 extends Node2D
 
 signal slam_finished(result)
