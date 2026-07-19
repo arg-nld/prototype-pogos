@@ -19,6 +19,7 @@ var speed := 250.0
 
 var stopped := false
 var can_input := true
+var enemy_ai_turn := false
 
 var top_limit : float
 var bottom_limit : float
@@ -39,6 +40,10 @@ func _ready():
 	
 	rating_sprite.hide()
 
+func start():
+	if enemy_ai_turn:
+		await get_tree().create_timer(randf_range(0.3, 1.2)).timeout
+		auto_stop()
 
 func _process(delta):
 	if stopped:
@@ -57,6 +62,9 @@ func _process(delta):
 
 
 func _input(event):
+	if enemy_ai_turn:
+		return
+	
 	if event.is_action_pressed("ui_accept") and can_input:
 		can_input = false
 		stopped = true
@@ -107,6 +115,17 @@ func slam_animation():
 	await bar_impact()
 
 	calculate_result()
+
+
+func auto_stop():
+	if stopped:
+		return
+	
+	can_input = false
+	stopped = true
+	
+	await slam_animation()
+	print("Enemy Ai Slam yo ass")
 
 
 func bar_impact():

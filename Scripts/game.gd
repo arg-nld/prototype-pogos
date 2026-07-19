@@ -1,9 +1,24 @@
+### Sabog na ko please lang gumana kana..... Sorry sa ibang comments medgo sabog.
+## And btw error pag sobrang pogs yung pick mo kaysa enemy.
 extends Node2D
 
 const POG = preload("res://Scenes/pog.tscn")
 const DECK_POG = preload("res://Scenes/deck_pog.tscn")
 const SLAMMER = preload("res://Scenes/slammer.tscn")
 const TIMING_BAR = preload("res://Scenes/timing_bar.tscn")
+
+#Screen Size
+const SCREEN_WIDTH = 1600
+const SCREEN_HEIGHT = 900
+const SCREEN_CENTER = Vector2(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+
+#Deck Positions
+const PLAYER_DECK_Y = 820
+const ENEMY_DECK_Y = 80
+
+#Center Position for Both Decks
+const PLAYER_DECK_CENTER = Vector2(SCREEN_CENTER.x, PLAYER_DECK_Y)
+const ENEMY_DECK_CENTER = Vector2(SCREEN_CENTER.x, ENEMY_DECK_Y)
 
 @onready var pogs: Node2D = $Pogs
 @onready var stack: Node2D = $Stack
@@ -17,11 +32,15 @@ var slam_power := 1.0
 var active_timing_bar: Node2D = null
 var active_slammer: Node2D = null
 var slammer_position := Vector2.ZERO
-var timing_bar_position := Vector2(576, 300)
+var timing_bar_position := SCREEN_CENTER
 
 var active_pogs: Array = []
 
-var stack_position = Vector2(600, 300)
+var player_turn = true
+#Tracker only for last turn
+var last_turn_is_player := true
+
+var stack_position := SCREEN_CENTER
 var can_select = true
 var slamming = false
 
@@ -30,16 +49,15 @@ func _ready():
 	slam_button.hide()
 	
 	# Initialize initial layouts
-	create_deck(player_deck, 580)
-	create_deck(enemy_deck, 70)
+	create_deck(player_deck, PLAYER_DECK_Y)
+	create_deck(enemy_deck, ENEMY_DECK_Y)
 
 
 func create_deck(deck, y_pos):
 	# Centers the deck horizontally based on a fixed screen width of 1152
 	var spacing = 50
 	var pog_count = 10
-	var deck_width = (pog_count - 1) * spacing
-	var start_x = (1152 - deck_width) / 2.0
+	var start_x = SCREEN_WIDTH / 2.0 - ((pog_count - 1) * spacing) / 2.0
 	
 	for i in range(pog_count):
 		var pog = DECK_POG.instantiate()
@@ -58,8 +76,7 @@ func arrange_deck(deck, y_pos):
 	# Called after pogs are removed from the deck to fill in the gaps
 	var spacing = 50
 	var pog_count = deck.get_child_count()
-	var deck_width = (pog_count - 1) * spacing
-	var start_x = (1152 - deck_width) / 2.0
+	var start_x = SCREEN_WIDTH / 2.0 - ((pog_count - 1) * spacing) / 2.0
 	
 	for i in range(pog_count):
 		var pog = deck.get_child(i)
@@ -72,16 +89,24 @@ func arrange_deck(deck, y_pos):
 		pog.selected = false
 
 
-func spawn_slammer():
+func spawn_slammer(player: bool):
+	last_turn_is_player = player
 	var slammer = SLAMMER.instantiate()
 	slammer.z_index = 100
 	add_child(slammer)
-
-	var start_position = stack_position + Vector2(0, -500)
-	var ready_position = stack_position + Vector2(0, -160)
-
+	
+	var start_position: Vector2
+	var ready_position: Vector2
+	
+	if player:
+		start_position = stack_position + Vector2(0, 500)
+		ready_position = stack_position + Vector2(0, 160)
+	else:
+		start_position = stack_position + Vector2(0, -500)
+		ready_position = stack_position + Vector2(0, -160)
+	
 	slammer.position = start_position
-
+	
 	var tween = create_tween()
 	tween.set_trans(Tween.TRANS_QUAD)
 	tween.set_ease(Tween.EASE_OUT)
@@ -100,15 +125,18 @@ func spawn_slammer():
 	active_slammer = slammer
 	slammer_position = ready_position
 
-	start_timing_bar()
+	start_timing_bar(player)
 
 
-func start_timing_bar():
+func start_timing_bar(player: bool):
 	active_timing_bar = TIMING_BAR.instantiate()
 	add_child(active_timing_bar)
 	
 	active_timing_bar.position = timing_bar_position
+	active_timing_bar.enemy_ai_turn = !player
 	active_timing_bar.slam_finished.connect(_on_timing_bar_slam_finished)
+	
+	active_timing_bar.start()
 
 func _on_timing_bar_slam_finished(result: Dictionary):
 	# Cache the outcome to drive the physics impulse later
@@ -125,7 +153,7 @@ func _on_timing_bar_slam_finished(result: Dictionary):
 		active_slammer = null
 	
 	# Trigger the physics explosion based on the slammer's final resting place
-	spawn_pogs(active_pogs.size(), slammer_position)
+	spawn_pogs(slammer_position)
 
 
 func animate_slammer_hit():
@@ -286,6 +314,39 @@ func move_selected_to_stack(selected):
 	# Brief buffer to let the visual stack settle
 	await get_tree().create_timer(0.1).timeout
 
+func move_enemy_to_stack(selected):
+	# Transitions 2D UI pogs into RigidBody/physics pogs for the main arena
+	for deck_pog in selected:
+		var pog = POG.instantiate()
+		pog.position = stack_position
+		pog.rotation_degrees = randf_range(0, 360) # Add variance to the stack appearance
+		pogs.add_child(pog)
+		active_pogs.append(pog)
+		
+		# Animate the UI element moving into the arena before deleting it
+		var tween = create_tween()
+		tween.parallel().tween_property(deck_pog, "global_position", stack_position, 0.25)
+		tween.parallel().tween_property(deck_pog, "scale", Vector2(0.3, 0.3), 0.25)
+		
+		await tween.finished
+		deck_pog.queue_free()
+		
+		restack_pogs(active_pogs)
+		
+	# Brief buffer to let the visual stack settle
+	await get_tree().create_timer(0.1).timeout
+
+func enemy_match_stack(amount):
+	# This is For Testing Only, This Only Matches The Player's Pogs InPlay
+	var selected = []
+	
+	for i in range(amount):
+		if enemy_deck.get_child_count() == 0:
+			break
+		selected.append(enemy_deck.get_child(i))
+	await move_enemy_to_stack(selected)
+	await get_tree().process_frame
+	arrange_deck(enemy_deck, ENEMY_DECK_Y)
 
 func update_slam_button():
 	# UI State validation
@@ -312,15 +373,20 @@ func check_results():
 		else:
 			won_pogs.append(pog)
 			
-	await move_won_pogs(won_pogs)
+	await move_won_pogs(won_pogs, last_turn_is_player)
 	
 	if remaining_pogs.is_empty():
 		end_round()
 	else:
 		# Put the remaining pogs back into a neat stack
 		restack_pogs(remaining_pogs)
+		player_turn = !player_turn
 		slamming = false
-		await spawn_slammer()
+		
+		if player_turn:
+			await spawn_slammer(true)
+		else:
+			await enemy_turn()
 
 
 func end_round():
@@ -329,6 +395,8 @@ func end_round():
 	can_select = true
 	slamming = false
 	
+	player_turn = true
+	
 	for pog in player_deck.get_children():
 		pog.selectable = true
 		
@@ -336,25 +404,37 @@ func end_round():
 	stack.hide()
 
 
-func move_won_pogs(won_pogs):
+func move_won_pogs(won_pogs, player: bool):
 	# Transition winning physics bodies back into UI deck elements
+	# Return Won Pogs to the Winner's Deck
+	var target_position: Vector2
+	if player:
+		target_position = PLAYER_DECK_CENTER
+	else:
+		target_position = ENEMY_DECK_CENTER
+	
 	for pog in won_pogs:
 		var tween = create_tween()
-		tween.tween_property(pog, "global_position", Vector2(576, 580), 0.4)
+		tween.tween_property(pog, "global_position", target_position, 0.4)
 		tween.parallel().tween_property(pog, "scale", Vector2(0.3, 0.3), 0.4)
 		
 		await tween.finished
 		
 		var new_pog = DECK_POG.instantiate()
-		player_deck.add_child(new_pog)
-		new_pog.position = Vector2(576, 580)
-		new_pog.start_position = new_pog.position
-		new_pog.selection_change.connect(update_slam_button)
-		
+		if player:
+			player_deck.add_child(new_pog)
+			new_pog.position = PLAYER_DECK_CENTER
+			new_pog.start_position = new_pog.position
+			new_pog.selection_change.connect(update_slam_button)
+			new_pog.selectable = false
+			arrange_deck(player_deck, PLAYER_DECK_Y)
+		else:
+			enemy_deck.add_child(new_pog)
+			new_pog.position = ENEMY_DECK_CENTER
+			new_pog.start_position = new_pog.position
+			new_pog.selectable = false
+			arrange_deck(enemy_deck, ENEMY_DECK_Y)
 		pog.queue_free()
-		new_pog.selectable = false
-		
-		arrange_deck(player_deck, 580)
 
 
 func restack_pogs(remaining_pogs):
@@ -378,7 +458,7 @@ func restack_pogs(remaining_pogs):
 	stack.set_count(remaining_pogs.size())
 
 
-func spawn_pogs(pog_count, slam_position):
+func spawn_pogs(slam_position):
 	# Translates the slammer's impact into radial physics impulses
 	for i in range(active_pogs.size()):
 		var pog = active_pogs[i]
@@ -423,16 +503,16 @@ func _on_slam_button_pressed():
 		pog.selectable = false
 		if pog.selected:
 			selected.append(pog)
-			
+	var amount = selected.size()
 	await move_selected_to_stack(selected)
-	
+	await enemy_match_stack(amount)
 	#one frame to ensure deck tree handles reparenting/deletion cleanly
 	await get_tree().process_frame
 	
-	arrange_deck(player_deck, 580)
+	arrange_deck(player_deck, PLAYER_DECK_Y)
 	stack.set_count(active_pogs.size())
 	stack.show()
-	await spawn_slammer()
+	await spawn_slammer(true)
 	
 	slam_button.hide()
 	slam_button.disabled = true
@@ -504,6 +584,8 @@ func animate_stack_impact():
 		)
 
 	await rebound.finished
-	
-func start_next_turn():
-	slamming = false
+
+func enemy_turn():
+	# Enemy waits for 1 Second Before Slamming
+	await get_tree().create_timer(1).timeout
+	await spawn_slammer(false)
