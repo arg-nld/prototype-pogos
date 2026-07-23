@@ -7,6 +7,8 @@ extends RigidBody2D
 var face_up = true
 var spin_speed = 0.08
 
+var stack_depth := 0
+
 var sprite_scale: Vector2
 var shadow_scale: Vector2
 
@@ -19,9 +21,7 @@ func _ready():
 
 func start():
 	jump()
-	
-	var land_on_heads = randf() < .3
-	flip(land_on_heads)
+	flip(false)
 
 func jump():
 	var tween = create_tween()

@@ -28,6 +28,7 @@ const ENEMY_DECK_CENTER = Vector2(SCREEN_CENTER.x, ENEMY_DECK_Y)
 
 # Multiplier driven by the timing bar minigame
 var slam_power := 1.0
+var slam_rate := ""
 
 var active_timing_bar: Node2D = null
 var active_slammer: Node2D = null
@@ -38,7 +39,7 @@ var active_pogs: Array = []
 
 var player_turn = true
 #Tracker only for last turn
-var last_turn_is_player := true
+var slam_owner := true
 
 var stack_position := SCREEN_CENTER
 var can_select = true
@@ -90,7 +91,7 @@ func arrange_deck(deck, y_pos):
 
 
 func spawn_slammer(player: bool):
-	last_turn_is_player = player
+	slam_owner = player
 	var slammer = SLAMMER.instantiate()
 	slammer.z_index = 100
 	add_child(slammer)
@@ -141,6 +142,7 @@ func start_timing_bar(player: bool):
 func _on_timing_bar_slam_finished(result: Dictionary):
 	# Cache the outcome to drive the physics impulse later
 	slam_power = result.power
+	slam_rate = result.rating
 	print("Slam rating: %s (power %.2f)" % [result.rating, result.power])
 	
 	active_timing_bar.queue_free()
@@ -373,15 +375,15 @@ func check_results():
 		else:
 			won_pogs.append(pog)
 			
-	await move_won_pogs(won_pogs, last_turn_is_player)
+	await move_won_pogs(won_pogs, slam_owner)
 	
 	if remaining_pogs.is_empty():
 		end_round()
 	else:
 		# Put the remaining pogs back into a neat stack
 		restack_pogs(remaining_pogs)
-		player_turn = !player_turn
 		slamming = false
+		player_turn = !player_turn
 		
 		if player_turn:
 			await spawn_slammer(true)
@@ -441,6 +443,7 @@ func restack_pogs(remaining_pogs):
 	# Freeze physics and neatly pile remaining pogs at the center
 	for i in range(remaining_pogs.size()):
 		var pog = remaining_pogs[i]
+		pog.stack_depth = i
 		pog.freeze = true
 		
 		# Micro-offset gives the stack a natural, slightly messy look
@@ -459,10 +462,10 @@ func restack_pogs(remaining_pogs):
 
 
 func spawn_pogs(slam_position):
-	# Translates the slammer's impact into radial physics impulses
-	for i in range(active_pogs.size()):
-		var pog = active_pogs[i]
-		
+	# Simulate the slammer's impact as energy travelling through the stack
+	var energy = get_energy()
+	
+	for pog in active_pogs:
 		# Calculate trajectory away from the impact point with slight randomization
 		var direction = (pog.position - slam_position).normalized()
 		direction = direction.rotated(randf_range(-0.5, 0.5))
@@ -471,21 +474,33 @@ func spawn_pogs(slam_position):
 		var base_force = lerp(80.0, 350.0, slam_power)
 		var random_force = randf_range(-20.0, 20.0)
 
-		var force = direction * (base_force + random_force)
 		pog.freeze = false
-		pog.apply_central_impulse(force)
+		pog.apply_central_impulse(direction * (base_force + random_force))
 		
 		# Higher pogs in the stack have a better chance to flip and gain angular velocity
-		var chance = 1.0 - float(i) / active_pogs.size()
-		if randf() < chance:
-			pog.angular_velocity = randf_range(-12.0, 12.0)
-			pog.start() # Assuming this triggers an internal flip animation/logic
+		var resistance = 12.0
+		resistance += randf_range(-2.0, 2.0)
+		resistance += pog.stack_depth * 2.5
+
+		if energy >= resistance:
+			pog.angular_velocity = randf_range(-12, 12)
+			pog.start()
+			# Flipped pog passes some energy to the next
+			energy -= resistance * .7
 		else:
-			pog.angular_velocity = randf_range(-4.0, 4.0)
+			pog.angular_velocity = randf_range(-4, 4)
+			# Non-flipped pog absorbs most of the remaining energy
+			energy -= resistance * .9
+		energy = max(0.0, energy)
 
 	# Wait for physics bodies to settle before evaluating the board state
 	await get_tree().create_timer(2.0).timeout
 	await check_results()
+
+
+func get_energy() -> float:
+	# Better timing = more energy transferred to stack =  more pogs will flip
+	return lerp(30.0, 140.0, slam_power)
 
 
 func _on_slam_button_pressed():
@@ -512,6 +527,7 @@ func _on_slam_button_pressed():
 	arrange_deck(player_deck, PLAYER_DECK_Y)
 	stack.set_count(active_pogs.size())
 	stack.show()
+	player_turn = true
 	await spawn_slammer(true)
 	
 	slam_button.hide()
